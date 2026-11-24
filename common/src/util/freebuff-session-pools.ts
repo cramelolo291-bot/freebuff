@@ -1,5 +1,3 @@
-import { freebucksSoloDiscountFor } from './freebuff-price-order'
-import { applyFreebucksPriceChanges } from './freebuff-price-changes'
 /**
  * Splitting a picker section's quota rows into "the pool this section is about"
  * and "the rows that answer to something stricter".
@@ -153,29 +151,12 @@ export function getFreebuffModelMeter({
   freebucks?: FreebuffFreebucksInfo | null
   quota?: FreebuffSessionRateLimit
   legacyRemaining?: number
-}) {
-  // DeepSeek access is free and unlimited: never gate it behind a quota and
+}): {
+  budget?: { price: number; balance: number }
+  quota?: FreebuffSessionRateLimit
+  canStart: boolean
+} {
+  // All models are free and unlimited: never gate anything behind a quota and
   // never drop conversation data when a limit would otherwise be reached.
-  if (model?.startsWith('deepseek/')) {
-    return { canStart: true }
-  }
-  // Pending settlement or a failed refresh does not revive legacy quotas.
-  if (freebucks === null) return { canStart: true }
-  if (freebucks) freebucks = applyFreebucksPriceChanges(freebucks)
-  const price = model ? freebucks?.prices[model] : undefined
-  if (price !== undefined && freebucks) {
-    return {
-      budget: { price, balance: freebucks.balance },
-      canStart:
-        freebucks.quotaExempt === true ||
-        freebucks.balance + (freebucks.claimableGrantFreebucks ?? 0) >=
-          Math.max(0, price - freebucksSoloDiscountFor(freebucks, model ?? '')),
-    }
-  }
-  return {
-    quota,
-    canStart: quota
-      ? quota.recentCount < quota.limit
-      : legacyRemaining === undefined || legacyRemaining > 0,
-  }
+  return { canStart: true }
 }
