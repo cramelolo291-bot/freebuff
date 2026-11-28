@@ -61,6 +61,7 @@ import {
   conversationSummaries,
   isIdleReturn,
   midTurnSummaryIsDue,
+  PERSONAL_TAIL_TOKENS,
   summarizeAndLog,
   summaryBandStart,
   summaryIdleMs,
@@ -151,6 +152,8 @@ import {
   expireMessages,
   frameSteeringContent,
   USER_INTERRUPTED_MESSAGE,
+  noteWithCause,
+  stopCause,
 } from './util/messages'
 import {
   estimateContextTokens,
@@ -1620,6 +1623,11 @@ export async function loopAgentSteps(
   const maxContextLength =
     compactionPolicy.maxContextLength ??
     contextPrunerBudgetForModel(agentTemplate.model)
+  // A personal thread's summary, and its newest turns kept beside it
+  // (common/src/constants/compaction-summary.ts).
+  const summaryStyle = compactionPolicy.summary
+  const tailTokens =
+    summaryStyle === 'personal' ? PERSONAL_TAIL_TOKENS : undefined
   // Keyed by conversation, so a summary that finishes after this run ended
   // reaches the next turn of the same thread.
   const summaries = conversationSummaries(
@@ -1654,7 +1662,8 @@ export async function loopAgentSteps(
       history: options.history,
       system,
       contextTokens: options.contextTokens,
-      targetTokens: summaryTargetTokens(maxContextLength),
+      targetTokens: summaryTargetTokens(maxContextLength, summaryStyle),
+      style: summaryStyle,
       maxOutputTokens: compactionPolicy.maxOutputTokens,
       mode: options.mode,
       midTurn: options.midTurn,
@@ -1846,7 +1855,12 @@ export async function loopAgentSteps(
         before,
       )
       let applied = summary
-        ? applyConversationSummary({ messages: before, summary, keep })
+        ? applyConversationSummary({
+            messages: before,
+            summary,
+            keep,
+            tailTokens,
+          })
         : null
       readySummary = usable(applied)
       // A ready summary is used at once, even when a newer one is in
@@ -1871,7 +1885,12 @@ export async function loopAgentSteps(
         if (!completed) outcome = 'failed'
         summary = summaries.latest(currentAgentState.compactionSummary, before)
         applied = summary
-          ? applyConversationSummary({ messages: before, summary, keep })
+          ? applyConversationSummary({
+            messages: before,
+            summary,
+            keep,
+            tailTokens,
+          })
           : null
       }
       // Never billed for a chat a summary would not shrink, however often the
@@ -1898,6 +1917,7 @@ export async function loopAgentSteps(
             messages: before,
             summary: fresh,
             keep,
+            tailTokens,
           })
         } else outcome = 'failed'
       }
@@ -2658,7 +2678,11 @@ export async function loopAgentSteps(
       currentAgentState.messageHistory = [
         ...currentAgentState.messageHistory,
         userMessage(
-          withSystemTags(USER_INTERRUPTED_MESSAGE),
+          withSystemTags(
+            noteWithCause(USER_INTERRUPTED_MESSAGE, {
+              cause: stopCause(signal.reason),
+            }),
+          ),
         ),
       ]
 
@@ -2757,7 +2781,9 @@ export async function loopAgentSteps(
       currentAgentState.messageHistory = [
         ...currentAgentState.messageHistory,
         userMessage(
-          withSystemTags(refused ? USER_PROMPT_REFUSED_NOTE : TURN_FAILED_NOTE),
+          withSystemTags(
+            refused ? USER_PROMPT_REFUSED_NOTE : noteWithCause(TURN_FAILED_NOTE),
+          ),
         ),
       ]
     }
