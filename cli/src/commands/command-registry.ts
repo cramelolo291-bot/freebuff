@@ -5,7 +5,6 @@ import {
 } from '../state/freebuff-chat-store'
 import { getFreebuffModelDirectory } from '../state/freebuff-catalog-store'
 import { safeOpen } from '../utils/open-url'
-import { adReports } from '../ads/ad-reports'
 
 import {
   handleAdsEnable,
@@ -21,6 +20,7 @@ import {
 import { handleDealsCommand } from './deals'
 import { handleCopyConversationCommand } from './copy-conversation'
 import { handleExportConversationCommand } from './export-conversation'
+import { handleSetupImport } from './setup-import'
 import { handleHelpCommand } from './help'
 import { handleImageCommand } from './image'
 import { handleInitializationFlowLocally } from './init'
@@ -215,6 +215,7 @@ const FREEBUFF_REMOVED_COMMANDS = new Set([
 ])
 
 const FREEBUFF_ONLY_COMMANDS = new Set([
+  'import',
   'byok',
   'plan',
   'end-session',
@@ -230,16 +231,7 @@ const FREEBUFF_ONLY_COMMANDS = new Set([
 ])
 
 const ALL_COMMANDS: CommandDefinition[] = [
-  defineCommandWithArgs({
-    name: 'ads:report',
-    handler: async (params, args) => {
-      params.saveToHistory(params.inputValue.trim())
-      clearInput(params)
-      const message = await adReports.command(args)
-      if (message)
-        params.setMessages((prev) => [...prev, getSystemMessage(message)])
-    },
-  }),
+  defineCommand({ name: 'import', handler: handleSetupImport }),
   defineCommand({
     name: 'ads:enable',
     handler: (params) => {

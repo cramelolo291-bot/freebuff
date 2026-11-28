@@ -164,6 +164,9 @@ export class SitesClient {
           variable_limit:
             'This project has reached its limit of 25 environment variables across Preview and Production. Replace or delete an existing variable.',
           deploy_required: 'Deploy this environment first.',
+          site_content_refused:
+            data.message ??
+            'This site was not published because it appears to break the Freebuff hosting rules. If you think this is a mistake, contact support@freebuff.com.',
           binding_exists:
             'That name is already used by a database or storage binding.',
           secret_not_found: 'This variable no longer exists. Refresh the list.',
@@ -178,7 +181,7 @@ export class SitesClient {
           site_deleting: 'This site is being deleted.',
           subdomain_taken: 'This subdomain is already taken. Try another name.',
           subdomain_unavailable: "That name isn't available. Choose a different domain.",
-          invalid_subdomain: 'Use 1–63 letters, numbers or hyphens. Start and end with a letter or number; generated addresses and customers are reserved.',
+          invalid_subdomain: data.message ?? 'Use 1–63 letters, numbers or hyphens. Start and end with a letter or number. Some names are reserved.',
           production_subdomain_only: 'Switch to Production to customize your Freebuff address.',
           invalid_domain: 'Enter a subdomain such as www.example.com, without a URL or path. Root domains and platform domains are not supported.',
           domain_claimed: 'This domain is already connected or being verified. Remove it from the other site or contact support to recover access.',

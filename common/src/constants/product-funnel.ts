@@ -22,6 +22,8 @@ export const productFunnelStageSchema = z.enum([
   'welcome',
   /** the phone-app prompt, on a return to the workspace after a break, after a first finished reply or from the checklist: shown (a computer sees the QR code at once), clicked (a store button on a phone), opened (a store page on a computer), closed */
   'mobile_prompt',
+  /** COD-1681's feature promo, one at the start of a web workspace session for a feature the account has not used (`feature_promos_2026_11`): shown, clicked (its button, or a store on the phone promo), closed */
+  'feature_promo',
   /** The Get started checklist: shown (once per page load), clicked (a step's button, `checklist_step`), closed (hidden from its menu or Done). Its A/B (`desktop_checklist_2026_11`, `checklist_variant`) ended 2026-11-13 with the card kept. */
   'checklist',
   'browser',
@@ -29,11 +31,15 @@ export const productFunnelStageSchema = z.enum([
   'composer',
   'draft',
   'project',
-  /** hosted Desktop's first-project screen ("Open a project to get started"): shown, selected (`project_choice`) */
+  /** hosted Desktop's first-project screen ("Open a project to get started"): shown, selected (`project_choice`); skipped (desktop_project_setup_skip_2026_11's skip arm, with `recent_*`) */
   'project_setup',
   'template',
-  /** a finished turn's review: shown, selected (one of its buttons) */
+  /** a finished turn's review: shown, selected (one of its buttons), opened (its verdict, in the Overview) */
   'turn_review',
+  /** a new account's starter pills under the new chat's composer (freebuff-starters.ts): shown
+   *  (once per landing and set, `starter_ids`), clicked (`starter_id`; `templates` for the
+   *  Start from a template pill). The run a click sends carries the id: server rows are `starter_*`. */
+  'starter',
   'model_picker',
   'model_selection',
   'admission',
@@ -94,7 +100,7 @@ export const REFERRAL_INVITE_VIA = Object.freeze({
     link: 'friend_joined_link',
     email: 'friend_joined_email',
   }),
-  /** Settings → Earn → Referrals, the limited-access counterpart of `settings`. */
+  /** Settings → Earn → Referrals (retired 2026-11-26); kept for links already shared. */
   settings_earn: Object.freeze({
     link: 'settings_earn_link',
     email: 'settings_earn_email',
@@ -267,7 +273,7 @@ export const welcomeVariantSchema = z.enum([
 /** The Get started checklist A/B's arms; since it ended (2026-11-13) every event says `checklist`. */
 export const checklistVariantSchema = z.enum(['control', 'checklist'])
 /** A step of the Get started checklist (onboarding-checklist/model.ts). */
-export const checklistStepSchema = z.enum(['project', 'message', 'mobile', 'themes'])
+export const checklistStepSchema = z.enum(['import', 'project', 'message', 'mobile', 'themes'])
 /** A step of the click-through welcome flow (welcome-flow/steps.ts). */
 export const welcomeStepSchema = z.enum([
   'unlocked',
@@ -435,6 +441,12 @@ export const productFunnelPropertiesSchema = z
       .optional(),
     has_attachments: z.boolean().optional(),
     attachment_count: z.number().int().min(0).max(1000).optional(),
+    /** `project_setup:skipped`: the recent folders Desktop found, the ones the skip arm offered (worked
+     *  in within six months, at most three), opened as projects, and failed to open. */
+    recent_found: z.number().int().min(0).max(100).optional(),
+    recent_offered: z.number().int().min(0).max(8).optional(),
+    recent_opened: z.number().int().min(0).max(8).optional(),
+    recent_failed: z.number().int().min(0).max(8).optional(),
     character_count: z.number().int().min(0).max(10_000_000).optional(),
     duration_ms: z
       .number()
@@ -456,6 +468,14 @@ export const productFunnelPropertiesSchema = z
     originApp: z.enum(['desktop', 'web']).optional(),
     executionTarget: z.enum(['device', 'cloud']).optional(),
     welcome_variant: welcomeVariantSchema.optional(),
+    /** `starter:clicked`: which pill (a starter id, or `templates`). */
+    starter_id: z.string().regex(/^[a-z0-9-]{1,40}$/).optional(),
+    /** `starter:shown`: the pills shown, in order, comma separated. */
+    starter_ids: z.string().max(400).regex(/^[a-z0-9,-]*$/).optional(),
+    /** `starter` events: the onboarding role that chose the pills. */
+    starter_role: z.string().regex(/^[a-z_]{1,40}$/).optional(),
+    /** `starter` events: the workspace the pills are in. */
+    workspace_mode: z.enum(['code', 'chat']).optional(),
     /** `welcome` events from the click-through flow: the step on screen. */
     welcome_step: welcomeStepSchema.optional(),
     /** `checklist` events: the install's arm of the Get started checklist test. */
@@ -466,6 +486,16 @@ export const productFunnelPropertiesSchema = z
     prompt_trigger: z.enum(['return', 'reply', 'checklist']).optional(),
     /** `mobile_prompt:clicked` (a phone) and `opened` (a computer): which store. A scanned QR code is counted by `/mobile`, not here. */
     store: z.enum(['ios', 'android']).optional(),
+    /** `feature_promo`: the registry's promo and copy variant ids. */
+    promo_id: opaqueId.optional(),
+    variant_id: opaqueId.optional(),
+    /** `feature_promo`: the days drawn to the next pop-up, which open of the day this was, the picker's probability of this choice and which picker made it (the picker sub-arm, or `launch` for a launch promo). */
+    gap_days: z.number().int().min(0).max(60).optional(),
+    open_index: z.number().int().min(0).max(1000).optional(),
+    pick_prob: z.number().min(0).max(1).optional(),
+    picker: z.enum(['uniform', 'model', 'launch']).optional(),
+    /** `feature_promo:closed`: its X, or Escape and a click outside (the dialog reports both alike). */
+    close_reason: z.enum(['close_button', 'dismissed']).optional(),
     renderer: z.literal('web-workspace').optional(),
     appVersion: z
       .string()

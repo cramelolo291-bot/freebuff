@@ -42,6 +42,7 @@ const FREEBUFF_REMOVED_COMMAND_IDS = new Set([
 ])
 
 const FREEBUFF_ONLY_COMMAND_IDS = new Set([
+  'import',
   'byok',
   'plan',
   'end-session',
@@ -52,11 +53,7 @@ const FREEBUFF_ONLY_COMMAND_IDS = new Set([
 ])
 
 const ALL_SLASH_COMMANDS: SlashCommand[] = [
-  {
-    id: 'ads:report',
-    label: 'ads:report',
-    description: 'Explain a problem with an ad: /ads:report <number> (or list recent ads)',
-  },
+  { id: 'import', label: 'import', description: 'Review and import your Claude Code, Codex, or Cursor settings' },
   {
     id: 'help',
     label: 'help',

@@ -1,4 +1,3 @@
-import { FREEBUFF_BOUNTIES_ENABLED } from '../constants/freebuff-bounties'
 import { SHARED_SETTINGS_PAGES } from '../constants/settings-pages'
 
 type Surface = 'desktop' | 'web'
@@ -10,7 +9,7 @@ type PageLabel =
   | 'Updates'
   | 'Account standing'
   | 'Apps & downloads'
-  | 'Artifacts'
+  | 'Import setup'
 
 // Index the settings themselves, including common names people use for them.
 // Keep this alongside the shared navigation, without mounting inactive pages or
@@ -37,6 +36,11 @@ const topics: Record<PageLabel, Topic[]> = {
     {
       label: 'Include AGENTS.md',
       keywords: 'agent instructions claude.md context rules',
+    },
+    {
+      label: 'Account instructions',
+      keywords: 'agent preferences personal rules edit',
+      surface: 'web',
     },
     {
       label: 'Automatically start the next session',
@@ -102,11 +106,10 @@ const topics: Record<PageLabel, Topic[]> = {
       surface: 'web',
     },
   ],
-  Artifacts: [
+  'Import setup': [
     {
-      label: 'Your artifacts',
-      keywords:
-        'docs documents slides decks sheets spreadsheets data whiteboards designs shared links share rename delete library',
+      label: 'Claude Code, Codex and Cursor',
+      keywords: 'import migrate setup settings skills agents instructions slash commands hooks mcp servers connectors',
       surface: 'web',
     },
   ],
@@ -147,16 +150,6 @@ const topics: Record<PageLabel, Topic[]> = {
       surface: 'web',
     },
     { label: 'Prepaid credits', keywords: 'developer api credit balance' },
-  ],
-  Earn: [
-    {
-      label: 'Referrals',
-      keywords: 'invite friends referral link rewards leaderboard',
-    },
-    ...(FREEBUFF_BOUNTIES_ENABLED
-      ? [{ label: 'Bounties', keywords: 'submissions tasks rewards hours freebucks' }]
-      : []),
-    { label: 'Offers', keywords: 'earn rewards hours freebucks' },
   ],
   Integrations: [
     {
